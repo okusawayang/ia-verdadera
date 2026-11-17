@@ -1,0 +1,66 @@
+INFORME DEL SUPERVISOR (Muse) — EJÉRCITO DE 10 AGENTES
+Fecha: 2026-11-17. Código: ~/workspace/local-ai/ia_verdadera/
+Orquestador: ejercito.py. Log: ejercito_log.txt.
+
+RESUMEN
+- 9 agentes escribieron código (427 líneas en total, 9 archivos).
+- El agente Revisor FALLÓ: su llamada devolvió HTTP 400 porque el prompt
+  con los 9 archivos juntos superaba el contexto de 4096 tokens del
+  servidor. El supervisor (Muse) hizo la revisión en su lugar.
+- Veredicto por agente:
+  * Razonamiento: BIEN. Su código funcionó tal cual (31 líneas).
+  * Memoria: CASI BIEN. Un error: el atributo self.hechos tapaba al
+    método hechos() (TypeError al llamarlo). Corregido.
+  * Metas: CASI BIEN. meta_activa devolvía la última meta agregada, no
+    la de mayor prioridad. Corregido. Faltaba el bloque principal.
+  * Objetivo: ROTO. Usaba una variable "texto" que no existía
+    (NameError), extraer_respuesta_final devolvía int y tomaba el PRIMER
+    número, faltaba el caso 0.0. Reescrito.
+  * Mundo: ROTO. acciones_posibles no comprobaba bordes y su lógica de
+    obstáculos era confusa; aplicar daba 10 a cualquier movimiento y
+    nunca terminaba; ModeloMundo guardaba la tabla con otra estructura
+    que predecir, y usaba self.obstaculos (no existe). Reescrito.
+  * Aprendizaje: ROTO. Llamaba a métodos inventados
+    (actualizar_transicion, guardar_experiencia, memoria.experiencias),
+    variables no definidas y trataba textos como diccionarios.
+    Reescrito.
+  * Agente: ROTO. Faltaba un import; predecir con un solo argumento;
+    memoria.guarda_aleatorio inventado; correr creaba un agente nuevo
+    en vez de usar el propio; aplicar con argumentos al revés.
+    Reescrito.
+  * Integración: ROTO (el peor). Inventó una API que no existe en
+    ningún módulo: ModeloMundo(mundo), Razonador(generador,
+    verificador), Agente(razonador, metas), Meta sin prioridad,
+    razonador.pensar(), mundo.obtener_estado(), agente.actuar(),
+    mundo.actualizar(), mundo.recompensar(), ajustar_recompensas(),
+    get_estado_activo(). Reescrito con los nombres reales.
+  * Probador: ROTO. Ni una importación; funciones con argumentos
+    incorrectos; métodos inventados (reconstruir, ajustar, obtener,
+    get_recompensa). Reescrito.
+
+VERIFICACIÓN DEL SUPERVISOR
+- python3 test_ia.py → "TODAS LAS PRUEBAS PASARON" (7 pruebas).
+- python3 ia_verdadera.py → piensa ("Respuesta: 42"), camina en el
+  mundo 10 pasos, reporta su meta activa. Todos los módulos corren
+  sueltos con su bloque principal.
+
+LIMITACIONES HONESTAS DEL PROTOTIPO
+- El agente es codicioso (greedy): elige la acción cuyo estado predicho
+  está más cerca de la meta. Sin planificación (búsqueda), da vueltas:
+  en la demo avanzó (0,0)→(1,0)→(0,0)→(1,0)→(2,0)... y en 10 pasos
+  llegó a (4,0), no a la meta (4,4). Aprende el modelo del mundo, pero
+  no planifica. Eso es justo lo que los motores VIN resolvían con
+  búsqueda en la activación.
+- El "razonamiento" es un ejemplo fijo (generador_ejemplo): el Razonador
+  elige entre 3 candidatos escritos a mano, no genera razonamientos de
+  verdad. La pieza real (generar varios caminos con un LLM y verificarlos)
+  no está conectada.
+- Las "metas propias" son metas puestas por el programador, no metas que
+  la IA se pone a sí misma. El problema abierto del debate (cómo se le
+  dan objetivos propios a una máquina) sigue abierto.
+- El aprendizaje continuo es una tabla de transiciones + hechos de
+  texto, no un cambio en los pesos de una red. No hay RL de verdad:
+  la recompensa se calcula, pero ningún peso se actualiza con ella.
+- Conclusión: es un esqueleto honesto y funcional de las 7 piezas, no
+  una verdadera IA. Cada pieza existe y corre, pero en miniatura y con
+  las partes difíciles simuladas o puestas a mano.
